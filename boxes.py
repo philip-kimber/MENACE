@@ -3,18 +3,31 @@
 class MBox:
 
     def __init__(self, shape=None, beads=None):
+        # The shape of the board for this box
         self.shape = shape if shape is not None else [0,0,0, 0,0,0, 0,0,0]
+        # The beads and their positions in the box
         self.beads = beads if beads is not None else [0,0,0, 0,0,0, 0,0,0]
 
-        self.path = [] ## Todo implement, for easier organisation and searching
+        # TODO:
+        # Describes how this box is reached by the other boxes, as a list in:
+        # nth 0th move box (always 0), nth 2nd move box, nth 4th move box, etc as needed
+        self.path = []
 
     def __eq__(self, other):
         return self.shape == other.shape and self.beads == other.beads
 
-    ###
-
+    # Methods generally for debugging/printing:
     def readable_shape(self):
+        # To print the shape in columns
         sh = ["_" if s == 0 else "X" if s == 1 else "O" for s in self.shape]
+        return [sh[0:3], sh[3:6], sh[6:9]]
+    def readable_full(self):
+        # As above but includes bead numbers where applicable and non-zero
+        # Will not work nicely if a bead number is greater than 9
+        sh = ["_" if s == 0 else "X" if s == 1 else "O" for s in self.shape]
+        for i in range(len(sh)):
+            if sh[i] == "_" and self.beads[i] != 0:
+                sh[i] = str(self.beads[i])
         return [sh[0:3], sh[3:6], sh[6:9]]
 
     def __repr__(self):
@@ -22,6 +35,7 @@ class MBox:
     def __str__(self): return self.__repr__()
 
 
+# Possible rotations of the board, as patterns for rotate_shape function
 ROTATIONS = [
     [0,1,2,3,4,5,6,7,8],
     [0,3,6,1,4,7,2,5,8],
@@ -33,6 +47,7 @@ ROTATIONS = [
     [2,1,0,5,4,3,8,7,6]
     ]
 
+# Possible positions for either player to win, used by is_win function
 WIN_POSITIONS = [
     [0,1,2],
     [3,4,5],
@@ -44,6 +59,7 @@ WIN_POSITIONS = [
     [2,4,6]
     ]
 
+# Configs for number of beads in each box to start
 START_WEIGHT_0 = 8
 START_WEIGHT_2 = 4
 START_WEIGHT_4 = 2
@@ -57,7 +73,7 @@ def rotate_shape(lst, order):
     return out
 
 def is_win(lst):
-    ## Returns 1, 2 if x, o resp. have won, else 0
+    ## Returns 1, 2 if X, O respectively have won, else 0
     for wp in WIN_POSITIONS:
         is_x = [True if lst[sq] == 1 else False for sq in wp]
         is_o = [True if lst[sq] == 2 else False for sq in wp]
@@ -88,7 +104,7 @@ def get_boxes():
             m.shape[x] = 1
             m.shape[o] = 2
             flag = 0
-            for order in ROTATIONS:
+            for order in ROTATIONS: # Remove boxes which are the same as others when rotated
                 for box in seconds:
                     if rotate_shape(m.shape, order) == box.shape:
                         flag = 1
@@ -103,6 +119,8 @@ def get_boxes():
             flag = 0
             shape_as = [s for s in box.shape]
             shape_as[i] = 1
+            # Also remove beads for squares where it would make the resulting board the same as others when rotated
+            # This could be an option, but unlikely we would use this
             for order in ROTATIONS:
                 for pos in bead_positions:
                     if rotate_shape(shape_as, order) == pos:
@@ -154,7 +172,7 @@ def get_boxes():
 
     out.append(thirds)
     
-    ## Move 6 MBoxes
+    ## Move 6 MBoxes (some of this code is quite repetitive/copy-paste from above)
     # Shapes:
     fourths = []
     for thi in thirds:
@@ -200,7 +218,35 @@ def get_boxes():
 
 
 if __name__ == "__main__":
-    pass
+    ## To print all box combinations, run this script
+    boxes = get_boxes()
+    all_boxes = []
+    for move in boxes:
+        for box in move:
+            all_boxes.append(box)
+
+    cols = int(input("Number of columns: "))
+    show_beads = int(input("Show beads (1=yes, 0=no): "))
+    out = ""
+    for i in range(0, len(all_boxes), cols):
+        for x in range(i, i+cols):
+            out += str(x).zfill(3)
+            out += " "
+        out += "\n"
+        for s in range(0,3):
+            for x in range(i, i+cols):
+                if x >= len(all_boxes): continue
+                if show_beads:
+                    out += "".join(all_boxes[x].readable_full()[s])
+                else:
+                    out += "".join(all_boxes[x].readable_shape()[s])
+                out += " "
+            out += "\n"
+        out += "\n"
+            
+
+    print(out)
+
 
     
 

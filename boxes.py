@@ -8,14 +8,6 @@ class MBox:
         # The beads and their positions in the box
         self.beads = beads if beads is not None else [0,0,0, 0,0,0, 0,0,0]
 
-        # TODO:
-        # Describes how this box is reached by the other boxes, as a list in:
-        # nth 0th move box (always 0), nth 2nd move box, nth 4th move box, etc as needed
-        self.path = []
-
-    def __eq__(self, other):
-        return self.shape == other.shape and self.beads == other.beads
-
     # Methods generally for debugging/printing:
     def readable_shape(self):
         # To print the shape in columns
@@ -119,8 +111,8 @@ def get_boxes():
             flag = 0
             shape_as = [s for s in box.shape]
             shape_as[i] = 1
-            # Also remove beads for squares where it would make the resulting board the same as others when rotated
-            # This could be an option, but unlikely we would use this
+            # Also removes beads for squares where it would make the resulting board the same as others when rotated
+            # There could be an option to not do this, but normally we would want this functionality on
             for order in ROTATIONS:
                 for pos in bead_positions:
                     if rotate_shape(shape_as, order) == pos:

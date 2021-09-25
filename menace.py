@@ -33,6 +33,9 @@ class Menace:
             board[menace_real_move] = 1
             print("MENACE moves in square '{0}'".format(commons.COLOUR_MAP[menace_real_move])) # Tell user where MENACE actually moves
 
+            t_board = list(map(lambda x: "X" if x == 1 else "O" if x == 2 else "-", board))
+            print("\n".join(["".join(t_board[0:3]), "".join(t_board[3:6]), "".join(t_board[6:9])])) # print the board
+
             # Check for win, after MENACE's move
             if commons.is_win(board): break
 
@@ -45,6 +48,9 @@ class Menace:
                     if usr_move in commons.COLOUR_MAP and board[commons.COLOUR_MAP.index(usr_move)] == 0: good = 1
             board[commons.COLOUR_MAP.index(usr_move)] = 2
             print("Player moves in square '{0}'".format(usr_move)) # Not strictly necessary but ease of use, tells user where player has moved
+
+            t_board = list(map(lambda x: "X" if x == 1 else "O" if x == 2 else "-", board))
+            print("\n".join(["".join(t_board[0:3]), "".join(t_board[3:6]), "".join(t_board[6:9])])) # print the board
 
             # Check for win, after player's move
             if commons.is_win(board): break

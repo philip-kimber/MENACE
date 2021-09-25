@@ -71,13 +71,25 @@ class Menace:
                     menace_move_raw = fetch(1, "TRY AGAIN! MENACE turn: Enter initial of bead colour: ", board, fetch_args)
                     if menace_move_raw in commons.COLOUR_MAP: good = 1
             if commons.COLOUR_MAP.index(menace_move_raw) == 9: # Indicates MENACE has resigned
+                is_resign = 1
+            rotated_map = commons.rotate_shape(commons.COLOUR_MAP[0:9], commons.ROTATIONS[box_ref[1]]) # If we had to rotate to find the box, apply this backwards
+            menace_real_move = rotated_map.index(menace_move_raw) if not is_resign else -1
+            if not is_resign and board[menace_real_move] != 0: # user input error handling: actually check that given bead was valid move
+                good = 0
+                while not good:
+                    menace_move_raw = fetch(1, "TRY AGAIN! MENACE turn: Enter initial of bead colour: ", board, fetch_args)
+                    if commons.COLOUR_MAP.index(menace_move_raw) == 9:
+                        is_resign = 1
+                        good = 1
+                        continue
+                    menace_real_move = rotated_map.index(menace_move_raw)
+                    if board[menace_real_move] == 0:
+                        good = 1
+            if is_resign: # If resigned at any point during error handling loop
                 fetch(0, "MENACE resigns", board, fetch_args)
                 log_cache.append(menace_move_raw)
-                is_resign = 1
                 break
-            rotated_map = commons.rotate_shape(commons.COLOUR_MAP[0:9], commons.ROTATIONS[box_ref[1]]) # If we had to rotate to find the box, apply this backwards
-            menace_real_move = rotated_map.index(menace_move_raw)
-            if board[menace_real_move] != 0: fetch(0, "ERROR", board, fetch_args)
+            # Make move if valid and non-resigning
             moves.append((box_ref[0], menace_move_raw))
             log_cache.append(menace_move_raw)
             board[menace_real_move] = 1

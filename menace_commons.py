@@ -1,3 +1,5 @@
+import random
+
 
 # Possible rotations of the board, as patterns for rotate_shape function
 ROTATIONS = [
@@ -64,3 +66,40 @@ def is_win(lst):
         if False not in is_o: return 2
     return 0
 
+def box_choice(box):
+    # Performs the weighted random choice from a matchbox
+    # Returns the appropriate COLOUR_MAP character
+    if sum(box.beads) == 0:
+        return COLOUR_MAP[9] # MENACE resigns
+    return random.choices(COLOUR_MAP[0:9], weights=box.beads, k=1)[0]
+
+def print_bead_changes(described_moves):
+    # Amalgamates the total changes of numbers of beads in boxes and prints this out
+    # Takes described_moves a list of tuples as (box id, bead colour character, count before, count after)
+
+    # Reorganise moves into boxes, then beads
+    moves = {}
+    for mv in described_moves:
+        if mv[0] not in moves.keys():
+            moves[mv[0]] = {}
+        if mv[1] not in moves[mv[0]]:
+            moves[mv[0]][mv[1]] = []
+        moves[mv[0]][mv[1]].append(mv)
+
+    # Work out changes and print
+    for box_id in sorted(moves.keys()):
+        for col in moves[box_id].keys():
+            lst = moves[box_id][col]
+            count_before = lst[0][2]
+            count_after = lst[len(lst)-1][3]
+            change = count_after - count_before
+            print("Beads (aggregate): box #{0}, do {1} of '{2}' coloured bead, should then be {3} of those in".format(
+                box_id, (change if change < 0 else "+" + str(change)), col, count_after))
+
+def print_results(results):
+    # Prints the results of a set of games, from a list of [number drawn, number MENACE won, number player won]
+    print("In {0} games:".format(sum(results)))
+    print("{0} won by MENACE".format(results[1]))
+    print("{0} won by Player".format(results[2]))
+    print("{0} drawn".format(results[0]))
+    

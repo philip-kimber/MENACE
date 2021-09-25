@@ -47,7 +47,7 @@ class Menace:
         # fetch should return (if is_fetch==1) a single-character string of one of the colours from commons.COLOUR_MAP
         # result_cb as passed should be a function taking following args:
         # - state: 0, 1, 2 as corresponding to commons.is_win (0=draw, 1=X win, 2=O win)
-        # - moves: a list of tuples of menaces moves: (box number, bead selected) corresponding to the moves local var that keeps track
+        # - described_moves: a list of tuples of menaces moves and the bead counts: (box number, bead colour, count before, count after)
         # - args: dictionary, the arguments for the result_cb function as passed ot this function in result_args
         # result_cb should not return anything
 
@@ -130,6 +130,7 @@ class Menace:
         self.games_played[state] += 1 # Update draw/win/loss counter
 
         # Apply the incentives and tell user which beads to add/take away
+        described_moves = [] # A list to be passed to result_cb, of tuples as (box id, bead colour, count before, count after)
         for move in moves:
             # Print incentive
             fetch(0, "Beads: box #{0}, do {1} of '{2}' coloured bead".format(
@@ -145,15 +146,22 @@ class Menace:
                 copy_beads[bead_i] += commons.INCENTIVES[state]
                 if sum(copy_beads) <= 0: # Revival situation
                     fetch(0, "Beads REVIVAL: leave 1 '{0}' coloured bead in box #0, to avoid MENACE dying".format(move[1]), board, fetch_args)
+                    count_before = self.all_boxes[0].beads[bead_i]
                     self.all_boxes[0].beads = [0,0,0, 0,0,0, 0,0,0]
                     self.all_boxes[0].beads[bead_i] = 1
+                    count_after = 1
                     is_revived = 1
             if not is_revived:
+                count_before = self.all_boxes[move[0]].beads[bead_i]
                 if self.all_boxes[move[0]].beads[bead_i] + commons.INCENTIVES[state] >= 0: self.all_boxes[move[0]].beads[bead_i] += commons.INCENTIVES[state]
                 else: self.all_boxes[move[0]].beads[bead_i] = 0
+                count_after = self.all_boxes[move[0]].beads[bead_i]
+
+            # Describe move for result callback
+            described_moves.append((move[0], move[1], count_before, count_after))
 
         # Callback the result
-        result_cb(state, moves, result_args)
+        result_cb(state, described_moves, result_args)
 
         # Log the game
         self.log_game(log_cache)
@@ -167,15 +175,20 @@ class Menace:
                 print(text)
         self.play_game(fetch)
 
-    def play_game_lst(self, lst, prnt=0):
-        # Play a game from a list of numbers for moves, as from log file
-        # If prnt=1, will print the game as it goes along
-        encoded = [commons.COLOUR_MAP[x] for x in lst]
-        ptr = [0]
+    def play_games_log(self, logf, prnt=0, results=0, bead_displ=0):
+        # Plays games from a log file and plays them, with options to print win/draw/loss, bead displacement
+        games = []
+        with open(logf, "r") as f:
+            dct = json.load(f)
+            games = dct["GAMES"]
+        encoded_games = [[commons.COLOUR_MAP[x] for x in lst] for lst in games]
+        ptr = [0, 0] # Game pointer, square pointer
+        games_played = [0, 0, 0]
+        moves_made = []
         def fetch(is_fetch, text, board, args):
             if is_fetch:
-                out = args["encoded"][args["ptr"][0]]
-                args["ptr"][0] += 1
+                out = args["encoded"][args["ptr"][0]][args["ptr"][1]]
+                args["ptr"][1] += 1
                 if args["prnt"] == 1:
                     print(text, end="")
                     print(out)
@@ -183,9 +196,25 @@ class Menace:
             else:
                 if args["prnt"] == 1:
                     print(text)
-        self.play_game(fetch, fetch_args={"encoded":encoded, "ptr":ptr, "prnt":prnt})
+        def result_cb(state, moves, args):
+            args["ptr"][0] += 1
+            args["ptr"][1] = 0
+            args["games_played"][state] += 1
+            for mv in moves:
+                args["moves_made"].append(mv)
+        
+        # Run the games
+        for x in range(len(encoded_games)):
+            self.play_game(fetch, fetch_args={"encoded":encoded_games, "ptr":ptr, "prnt":prnt},
+                           result_cb=result_cb, result_args={"ptr":ptr, "games_played":games_played, "moves_made":moves_made})
 
-
+        # Print as necessary
+        if results:
+            commons.print_results(games_played)
+        if bead_displ:
+            commons.print_bead_changes(moves_made)
+        
+        
 if __name__ == "__main__":
     menace = Menace()
     while True:

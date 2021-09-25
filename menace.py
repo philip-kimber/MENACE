@@ -59,6 +59,7 @@ class Menace:
 
         # Play the moves, keeping track of beads selected
         moves = [] # List of tuples of MENACE's moves (box number, bead selected)
+        is_resign = 0
         for _ in range(4):
             # MENACE goes first
             box_ref = commons.find_box(board, self.all_boxes)
@@ -69,7 +70,12 @@ class Menace:
                 while not good:
                     menace_move_raw = fetch(1, "TRY AGAIN! MENACE turn: Enter initial of bead colour: ", board, fetch_args)
                     if menace_move_raw in commons.COLOUR_MAP: good = 1
-            rotated_map = commons.rotate_shape(commons.COLOUR_MAP, commons.ROTATIONS[box_ref[1]]) # If we had to rotate to find the box, apply this backwards
+            if commons.COLOUR_MAP.index(menace_move_raw) == 9: # Indicates MENACE has resigned
+                fetch(0, "MENACE resigns", board, fetch_args)
+                log_cache.append(menace_move_raw)
+                is_resign = 1
+                break
+            rotated_map = commons.rotate_shape(commons.COLOUR_MAP[0:9], commons.ROTATIONS[box_ref[1]]) # If we had to rotate to find the box, apply this backwards
             menace_real_move = rotated_map.index(menace_move_raw)
             if board[menace_real_move] != 0: fetch(0, "ERROR", board, fetch_args)
             moves.append((box_ref[0], menace_move_raw))
@@ -95,13 +101,13 @@ class Menace:
             if commons.is_win(board): break
 
         # Final move of the game (MENACE fills the only empty square)
-        if not commons.is_win(board):
+        if not is_resign and not commons.is_win(board):
             menace_move = board.index(0)
             log_cache.append(commons.COLOUR_MAP[menace_move])
             board[menace_move] = 1
             fetch(0, "MENACE final turn: MENACE moves in square '{0}'".format(commons.COLOUR_MAP[menace_move]), board, fetch_args)
 
-        state = commons.is_win(board) # The commons.INCENTIVES list is organised so that we can use state as an index
+        state = commons.is_win(board) if not is_resign else 2 # The commons.INCENTIVES list is organised so that we can use state as an index
         if state == 1: # MENACE has won
             fetch(0, "Game: MENACE wins", board, fetch_args)
         elif state == 2: # Player has won
@@ -119,10 +125,20 @@ class Menace:
                 ("+" + str(commons.INCENTIVES[state]) if commons.INCENTIVES[state] >= 0 else str(commons.INCENTIVES[state])),
                 move[1]), board, fetch_args)
 
-            # Do incentive (TODO implement exception that first box can't die)
+            # Do incentive: avoid emptying the first box, to prevent MENACE from 'dying'
             bead_i = commons.COLOUR_MAP.index(move[1])
-            if self.all_boxes[move[0]].beads[bead_i] + commons.INCENTIVES[state] >= 0: self.all_boxes[move[0]].beads[bead_i] += commons.INCENTIVES[state]
-            else: self.all_boxes[move[0]].beads[bead_i] = 0
+            is_revived = 0
+            if move[0] == 0:
+                copy_beads = [bead for bead in self.all_boxes[0].beads]
+                copy_beads[bead_i] += commons.INCENTIVES[state]
+                if sum(copy_beads) <= 0: # Revival situation
+                    fetch(0, "Beads REVIVAL: leave 1 '{0}' coloured bead in box #0, to avoid MENACE dying".format(move[1]), board, fetch_args)
+                    self.all_boxes[0].beads = [0,0,0, 0,0,0, 0,0,0]
+                    self.all_boxes[0].beads[bead_i] = 1
+                    is_revived = 1
+            if not is_revived:
+                if self.all_boxes[move[0]].beads[bead_i] + commons.INCENTIVES[state] >= 0: self.all_boxes[move[0]].beads[bead_i] += commons.INCENTIVES[state]
+                else: self.all_boxes[move[0]].beads[bead_i] = 0
 
         # Callback the result
         result_cb(state, moves, result_args)
@@ -160,4 +176,6 @@ class Menace:
 
 if __name__ == "__main__":
     menace = Menace()
-    menace.play_game_usr()
+    while True:
+        menace.play_game_usr()
+    

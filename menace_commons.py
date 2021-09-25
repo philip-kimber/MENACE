@@ -31,7 +31,8 @@ INITIAL_WEIGHTS = [4, 2, 1] # Weight in 2nd move boxes, 4th move boxes, 6th move
 # and this is written here in board order, rows-first
 COLOUR_MAP = ['r','o','y',
               'g','b','i',
-              'v','w','l']
+              'v','w','l',
+              'D'] # The final colour (COLOUR_MAP[9]) represents where the box is empty and MENACE resigns
 
 # The amount by which we change the beads in each eventuality, written here as a list of
 # [change if MENACE draws, change if MENACE wins, change if MENACE loses]

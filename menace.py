@@ -8,9 +8,12 @@ import json
 
 class Menace:
 
-    def __init__(self):
+    def __init__(self, config=commons.MenaceConfig()):
+        # Set config
+        self.config = config
+        
         # Generate matchboxes
-        self.all_boxes = get_boxes()
+        self.all_boxes = get_boxes(self.config)
 
         # List of [number of games drawn, games MENACE won, games MENACE lost]
         # Sum of this list will be number of games played
@@ -28,14 +31,15 @@ class Menace:
         except FileExistsError:
             # Given that filename includes seconds counter, unlikely to be a problem, but this is the easiest way to be on the safe side
             raise FileExistsError("File '{0}' exists; was going to use for log file but do not want to overwrite. Restart program".format(self.log_path))
-        log_template = {"CONFIG": {}, "GAMES":[]}
+        cfg_dct = self.config.as_dct()
+        log_template = {"CONFIG": cfg_dct, "GAMES":[]}
         with open(self.log_path, "w") as f:
             json.dump(log_template, f, indent=4) # Write the initial log boilerplate to the file
 
     def log_game(self, lst):
         # Write the transcript of a game to the log file
         # Takes lst parameter, which is simply a list of every raw colour move (directly as chosen by boxes/player, no rotation needed)
-        decoded = [commons.COLOUR_MAP.index(m) for m in lst] # Decode it so that the log is not reliant on the colour map (although this will be in CONFIG)
+        decoded = [self.config.COLOUR_MAP.index(m) for m in lst] # Decode it so that the log is not reliant on the colour map (although this will be in CONFIG)
         with open(self.log_path, "r") as f:
             dct = json.load(f)
         dct["GAMES"].append(decoded)
@@ -50,7 +54,7 @@ class Menace:
         # - board: board list, in case the prompt needs to show the state of the board
         # - box_id: int, to tell which box to use when MENACE's move is prompted, -1 if not a MENACE move prompt
         # - args: dictionary, the arguments for the fetch function as passed to this function in fetch_args
-        # fetch should return (if is_fetch==1) a single-character string of one of the colours from commons.COLOUR_MAP
+        # fetch should return (if is_fetch==1) a single-character string of one of the colours from self.config.COLOUR_MAP
         # result_cb as passed should be a function taking following args:
         # - state: 0, 1, 2 as corresponding to commons.is_win (0=draw, 1=X win, 2=O win)
         # - described_moves: a list of tuples of menaces moves and the bead counts: (box number, bead colour, count before, count after)
@@ -71,20 +75,20 @@ class Menace:
             box_ref = commons.find_box(board, self.all_boxes)
             fetch(0, "Find box #{0}".format(box_ref[0]), board, -1, fetch_args) # Tell user the number of the box to find
             menace_move_raw = fetch(1, "MENACE turn: Enter initial of bead colour: ", board, box_ref[0], fetch_args) # Ask user for result of bead choice from box
-            if menace_move_raw not in commons.COLOUR_MAP: # user input error handling
+            if menace_move_raw not in self.config.COLOUR_MAP: # user input error handling
                 good = 0
                 while not good:
                     menace_move_raw = fetch(1, "TRY AGAIN! MENACE turn: Enter initial of bead colour: ", board, box_ref[0], fetch_args)
-                    if menace_move_raw in commons.COLOUR_MAP: good = 1
-            if commons.COLOUR_MAP.index(menace_move_raw) == 9: # Indicates MENACE has resigned
+                    if menace_move_raw in self.config.COLOUR_MAP: good = 1
+            if self.config.COLOUR_MAP.index(menace_move_raw) == 9: # Indicates MENACE has resigned
                 is_resign = 1
-            rotated_map = commons.rotate_shape(commons.COLOUR_MAP[0:9], commons.ROTATIONS[box_ref[1]]) # If we had to rotate to find the box, apply this backwards
+            rotated_map = commons.rotate_shape(self.config.COLOUR_MAP[0:9], commons.ROTATIONS[box_ref[1]]) # If we had to rotate to find the box, apply this backwards
             menace_real_move = rotated_map.index(menace_move_raw) if not is_resign else -1
             if not is_resign and board[menace_real_move] != 0: # user input error handling: actually check that given bead was valid move
                 good = 0
                 while not good:
                     menace_move_raw = fetch(1, "TRY AGAIN! MENACE turn: Enter initial of bead colour: ", board, box_ref[0], fetch_args)
-                    if commons.COLOUR_MAP.index(menace_move_raw) == 9:
+                    if self.config.COLOUR_MAP.index(menace_move_raw) == 9:
                         is_resign = 1
                         good = 1
                         continue
@@ -99,19 +103,19 @@ class Menace:
             moves.append((box_ref[0], menace_move_raw))
             log_cache.append(menace_move_raw)
             board[menace_real_move] = 1
-            fetch(0, "MENACE moves in square '{0}'".format(commons.COLOUR_MAP[menace_real_move]), board, -1, fetch_args) # Tell user where MENACE actually moves
+            fetch(0, "MENACE moves in square '{0}'".format(self.config.COLOUR_MAP[menace_real_move]), board, -1, fetch_args) # Tell user where MENACE actually moves
 
             # Check for win, after MENACE's move
             if commons.is_win(board): break
 
             # Now player's turn
             usr_move = fetch(1, "Player turn: Enter initial of move colour: ", board, -1, fetch_args) # Ask user where player has moved
-            if usr_move not in commons.COLOUR_MAP or board[commons.COLOUR_MAP.index(usr_move)] != 0: # user input error handling
+            if usr_move not in self.config.COLOUR_MAP or board[self.config.COLOUR_MAP.index(usr_move)] != 0: # user input error handling
                 good = 0
                 while not good:
                     usr_move = fetch(1, "TRY AGAIN! Player turn: Enter initial of move colour: ", board, -1, fetch_args)
-                    if usr_move in commons.COLOUR_MAP and board[commons.COLOUR_MAP.index(usr_move)] == 0: good = 1
-            board[commons.COLOUR_MAP.index(usr_move)] = 2
+                    if usr_move in self.config.COLOUR_MAP and board[self.config.COLOUR_MAP.index(usr_move)] == 0: good = 1
+            board[self.config.COLOUR_MAP.index(usr_move)] = 2
             log_cache.append(usr_move)
             fetch(0, "Player moves in square '{0}'".format(usr_move), board, -1, fetch_args) # Not strictly necessary but ease of use, tells user where player has moved
 
@@ -121,11 +125,11 @@ class Menace:
         # Final move of the game (MENACE fills the only empty square)
         if not is_resign and not commons.is_win(board):
             menace_move = board.index(0)
-            log_cache.append(commons.COLOUR_MAP[menace_move])
+            log_cache.append(self.config.COLOUR_MAP[menace_move])
             board[menace_move] = 1
-            fetch(0, "MENACE final turn: MENACE moves in square '{0}'".format(commons.COLOUR_MAP[menace_move]), board, -1, fetch_args)
+            fetch(0, "MENACE final turn: MENACE moves in square '{0}'".format(self.config.COLOUR_MAP[menace_move]), board, -1, fetch_args)
 
-        state = commons.is_win(board) if not is_resign else 2 # The commons.INCENTIVES list is organised so that we can use state as an index
+        state = commons.is_win(board) if not is_resign else 2 # The self.config.INCENTIVES list is organised so that we can use state as an index
         if state == 1: # MENACE has won
             fetch(0, "Game: MENACE wins", board, -1, fetch_args)
         elif state == 2: # Player has won
@@ -141,15 +145,15 @@ class Menace:
             # Print incentive
             fetch(0, "Beads: box #{0}, do {1} of '{2}' coloured bead".format(
                 move[0],
-                ("+" + str(commons.INCENTIVES[state]) if commons.INCENTIVES[state] >= 0 else str(commons.INCENTIVES[state])),
+                ("+" + str(self.config.INCENTIVES[state]) if self.config.INCENTIVES[state] >= 0 else str(self.config.INCENTIVES[state])),
                 move[1]), board, -1, fetch_args)
 
             # Do incentive: avoid emptying the first box, to prevent MENACE from 'dying'
-            bead_i = commons.COLOUR_MAP.index(move[1])
+            bead_i = self.config.COLOUR_MAP.index(move[1])
             is_revived = 0
             if move[0] == 0:
                 copy_beads = [bead for bead in self.all_boxes[0].beads]
-                copy_beads[bead_i] += commons.INCENTIVES[state]
+                copy_beads[bead_i] += self.config.INCENTIVES[state]
                 if sum(copy_beads) <= 0: # Revival situation
                     fetch(0, "Beads REVIVAL: leave 1 '{0}' coloured bead in box #0, to avoid MENACE dying".format(move[1]), board, -1, fetch_args)
                     count_before = self.all_boxes[0].beads[bead_i]
@@ -159,7 +163,7 @@ class Menace:
                     is_revived = 1
             if not is_revived:
                 count_before = self.all_boxes[move[0]].beads[bead_i]
-                if self.all_boxes[move[0]].beads[bead_i] + commons.INCENTIVES[state] >= 0: self.all_boxes[move[0]].beads[bead_i] += commons.INCENTIVES[state]
+                if self.all_boxes[move[0]].beads[bead_i] + self.config.INCENTIVES[state] >= 0: self.all_boxes[move[0]].beads[bead_i] += self.config.INCENTIVES[state]
                 else: self.all_boxes[move[0]].beads[bead_i] = 0
                 count_after = self.all_boxes[move[0]].beads[bead_i]
 
@@ -183,13 +187,21 @@ class Menace:
                 print(text)
         self.play_game(fetch)
 
-    def play_games_log(self, logf, prnt=0, results=0, bead_displ=0):
+    def play_games_log(self, logf, cfg_update=0, prnt=0, results=0, bead_displ=0):
         # Plays games from a log file and plays them, with options to print win/draw/loss, bead displacement
+        # If cfg_update is 1, the config will be updated with the log's config, if different,
+        # But note that whilst it will change the bead settings, the boxes will (of course) not be re-generated
         games = []
-        with open(logf, "r") as f:
+        cfg_dct = {}
+        with open(logf, "r") as f: # Open and read log
             dct = json.load(f)
             games = dct["GAMES"]
-        encoded_games = [[commons.COLOUR_MAP[x] for x in lst] for lst in games]
+            cfg_dct = dct["CONFIG"]
+        if cfg_update: # Update config if desired and necessary
+            cfg = commons.menace_config_from_dct(cfg_dct)
+            if not commons.menace_config_compare(cfg, self.config):
+                self.config = cfg
+        encoded_games = [[self.config.COLOUR_MAP[x] for x in lst] for lst in games]
         ptr = [0, 0] # Game pointer, square pointer
         games_played = [0, 0, 0]
         moves_made = []
@@ -226,15 +238,16 @@ class Menace:
         # Runs games by playing MENACE's turns against the moves of an opponent
         # The opponent is passed as a function taking following parameters:
         # - board: list of board
+        # - config: the config, necessary for COLOUR_MAP (could change this?)
         # opponent function should return a character from COLOUR_MAP[0:9] (not allowed to resign, of course)
         games_played = [0, 0, 0]
         moves_made = []
         def fetch(is_fetch, text, board, box_id, args):
             if is_fetch:
                 if box_id == -1: # Opponent's move
-                    return args["opponent"](board)
+                    return args["opponent"](board, args["config"])
                 else: # MENACE's move
-                    return commons.box_choice(args["all_boxes"][box_id])
+                    return commons.box_choice(args["all_boxes"][box_id], self.config)
             else:
                 if args["prnt"] == 1:
                     print(text)
@@ -245,7 +258,7 @@ class Menace:
 
         # Run the games
         for x in range(no_of_games):
-            self.play_game(fetch, fetch_args={"opponent":opponent, "all_boxes":self.all_boxes, "prnt":prnt},
+            self.play_game(fetch, fetch_args={"opponent":opponent, "all_boxes":self.all_boxes, "prnt":prnt, "config":self.config},
                            result_cb=result_cb, result_args={"games_played":games_played, "moves_made":moves_made})
 
         # Print as necessary

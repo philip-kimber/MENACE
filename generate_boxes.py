@@ -24,12 +24,13 @@ class MBox:
         return [sh[0:3], sh[3:6], sh[6:9]]
 
 
-def get_boxes():
+def get_boxes(config):
     # Generates the basic matchbox positions and bead setups
     # Returns a list of all the matchboxes
+    # Must be passed the config in order to properly populate with beads etc
 
     # Generate move 0 MBox (blank board)
-    box_levels = [[MBox([0,0,0, 0,0,0, 0,0,0], [x for x in commons.INITIAL_BOX_BEADS])]]
+    box_levels = [[MBox([0,0,0, 0,0,0, 0,0,0], [x for x in config.INITIAL_BOX_BEADS])]]
 
     # Generate remaining MBoxes, appending each level to box_levels
     for move in range(3):
@@ -69,7 +70,7 @@ def get_boxes():
                         if commons.rotate_shape(shape_as, order) == pos:
                             flag = 1
                 if not flag:
-                    box.beads[i] = commons.INITIAL_WEIGHTS[move]
+                    box.beads[i] = config.INITIAL_WEIGHTS[move]
                     bead_positions.append(shape_as)
     
         box_levels.append(cur_boxes)
@@ -83,9 +84,8 @@ def get_boxes():
     return out
 
 
-def print_boxes():
-    ## Prints the generated box combinations, in columns and with or without beads
-    all_boxes = get_boxes()
+def print_boxes(all_boxes):
+    # Prints box combinations, in columns and with or without beads, from the boxes in a list as passed
 
     cols = int(input("Number of columns: "))
     show_beads = int(input("Show beads (1=yes, 0=no): "))
@@ -110,5 +110,8 @@ def print_boxes():
 
 
 if __name__ == "__main__":
-    print_boxes()
+    # Does print_boxes when run
+    cfg = commons.MenaceConfig()
+    boxes = get_boxes(cfg)
+    print_boxes(boxes)
     

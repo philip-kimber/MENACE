@@ -1,6 +1,58 @@
 import random
 
 
+# MenaceConfig object will be used to keep track of the configurations
+class MenaceConfig:
+
+    def __init__(self):
+        # Configs for number of beads in each box to start
+        self.INITIAL_BOX_BEADS = [8,8,0, 0,8,0, 0,0,0]
+        self.INITIAL_WEIGHTS = [4, 2, 1] # Weight in 2nd move boxes, 4th move boxes, 6th move boxes
+
+        # Mapping of colours of beads to spaces on board. Each colour must have a single character reference
+        # and this is written here in board order, rows-first
+        self.COLOUR_MAP = ['r','o','y',
+                           'g','b','i',
+                           'v','w','l',
+                           'D'] # The final colour (COLOUR_MAP[9]) represents where the box is empty and MENACE resigns
+
+        # The amount by which we change the beads in each eventuality, written here as a list of
+        # [change if MENACE draws, change if MENACE wins, change if MENACE loses]
+        self.INCENTIVES = [+1, +3, -1]
+
+    def as_dct(self):
+        # Return the configurations in dictionary form for logging
+        dct = {
+            "INITIAL_BOX_BEADS": self.INITIAL_BOX_BEADS,
+            "INITIAL_WEIGHTS": self.INITIAL_WEIGHTS,
+            "COLOUR_MAP": self.COLOUR_MAP,
+            "INCENTIVES": self.INCENTIVES
+            }
+        return dct
+
+def menace_config_from_dct(dct):
+    # Produces a populated config object from dictionary from log (no error checking)
+    out = MenaceConfig()
+    if "INITIAL_BOX_BEADS" in dct.keys():
+        out.INITIAL_BOX_BEADS = dct["INITIAL_BOX_BEADS"]
+    if "INITIAL_WEIGHTS" in dct.keys():
+        out.INITIAL_WEIGHTS = dct["INITIAL_WEIGHTS"]
+    if "COLOUR_MAP" in dct.keys():
+        out.COLOUR_MAP = dct["COLOUR_MAP"]
+    if "INCENTIVES" in dct.keys():
+        out.INCENTIVES = dct["INCENTIVES"]
+    return out
+
+def menace_config_compare(cfg, comp):
+    # Returns boolean for whether a config (as lifted from log perhaps) is the same as another
+    # True = they are the same, False = different
+    if cfg.INITIAL_BOX_BEADS != comp.INITIAL_BOX_BEADS: return False
+    if cfg.INITIAL_WEIGHTS != comp.INITIAL_WEIGHTS: return False
+    if cfg.COLOUR_MAP != comp.COLOUR_MAP: return False
+    if cfg.INCENTIVES != comp.INCENTIVES: return False
+    return True
+        
+
 # Possible rotations of the board, as patterns for rotate_shape function
 ROTATIONS = [
     [0,1,2,3,4,5,6,7,8],
@@ -25,20 +77,6 @@ WIN_POSITIONS = [
     [2,4,6]
     ]
 
-# Configs for number of beads in each box to start
-INITIAL_BOX_BEADS = [8,8,8, 8,8,8, 8,8,8]
-INITIAL_WEIGHTS = [4, 2, 1] # Weight in 2nd move boxes, 4th move boxes, 6th move boxes
-
-# Mapping of colours of beads to spaces on board. Each colour must have a single character reference
-# and this is written here in board order, rows-first
-COLOUR_MAP = ['r','o','y',
-              'g','b','i',
-              'v','w','l',
-              'D'] # The final colour (COLOUR_MAP[9]) represents where the box is empty and MENACE resigns
-
-# The amount by which we change the beads in each eventuality, written here as a list of
-# [change if MENACE draws, change if MENACE wins, change if MENACE loses]
-INCENTIVES = [+1, +3, -1]
 
 def find_box(board, all_boxes):
     # Finds the necessary box for a board position
@@ -66,12 +104,13 @@ def is_win(lst):
         if False not in is_o: return 2
     return 0
 
-def box_choice(box):
+def box_choice(box, cfg):
     # Performs the weighted random choice from a matchbox
     # Returns the appropriate COLOUR_MAP character
+    # Requires the config for the COLOUR_MAP
     if sum(box.beads) == 0:
-        return COLOUR_MAP[9] # MENACE resigns
-    return random.choices(COLOUR_MAP[0:9], weights=box.beads, k=1)[0]
+        return cfg.COLOUR_MAP[9] # MENACE resigns
+    return random.choices(cfg.COLOUR_MAP[0:9], weights=box.beads, k=1)[0]
 
 def print_bead_changes(described_moves):
     # Amalgamates the total changes of numbers of beads in boxes and prints this out

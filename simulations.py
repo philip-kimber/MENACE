@@ -24,5 +24,37 @@ def opponent_basic(board):
         return wm
     return opponent_random(board)
 
-# TODO perfect game opponent
-    
+def opponent_intermediate(board):
+    # Simulation player that wins if it can, blocks if it must, otherwise random
+    my_wm = winning_move(board, 2)
+    if my_wm != -1: return my_wm
+    op_wm = winning_move(board, 1)
+    if op_wm != -1: return op_wm
+    return opponent_random(board)
+
+def opponent_perfect(board):
+    # Simulation player that always plays a perfect game
+    if board.count(0) == 8: # First move: go for centre if possible, else a corner
+        if board[4] == 0: return commons.COLOUR_MAP[4]
+        else: return random.choices(commons.COLOUR_MAP[0:9], weights=[1,0,1,0,0,0,1,0,1], k=1)[0]
+    elif board.count(0) == 6: # Second move
+        # Block if opponent can win
+        op_wm = winning_move(board, 1)
+        if op_wm != -1: return op_wm
+        # If we have the centre, go for an edge that is not opposite an opponent square
+        if board[4] == 2:
+            out = random.choices(commons.COLOUR_MAP[0:9],
+                                  weights=[sq if board[i] == 0 and board[[0,7,0,5,0,3,0,1,0][i]] != 1 else 0
+                                           for i, sq in enumerate([0,1,0,1,0,1,0,1,0])], k=1)[0]
+            return out
+        else: # Take a corner
+            return random.choices(commons.COLOUR_MAP[0:9],
+                                  weights=[sq if board[i] == 0 else 0 for i, sq in enumerate([1,0,1,0,0,0,1,0,1])], k=1)[0]
+    else: # Third and fifth moves
+        # Win if possible, or block, or go randomly and it leads to draw
+        my_wm = winning_move(board, 2)
+        if my_wm != -1: return my_wm
+        op_wm = winning_move(board, 1)
+        if op_wm != -1: return op_wm
+        return random.choices(commons.COLOUR_MAP[0:9], weights=[1 if s == 0 else 0 for s in board], k=1)[0]
+

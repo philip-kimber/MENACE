@@ -257,7 +257,4 @@ class Menace:
         
 if __name__ == "__main__":
     menace = Menace()
-    menace.simulate_games(simulations.opponent_basic, 20, 1, 1, 1)
-    #while True:
-    #    menace.play_game_usr()
     

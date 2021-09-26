@@ -21,7 +21,8 @@ class Menace:
 
         # Lists to keep track of progress as games progress
         self.state_over_time = [] # One item per game, the result 0=draw, 1=MENACE wins, 2=player wins
-        self.beads_over_time = [] # One item per game, the number of beads in the first box
+        self.beads_over_time = [] # One item per game, the number of beads in the first box at end of game
+        self.initial_first_box_beads = sum(self.all_boxes[0].beads) # To allow for calculation of change of beads
 
         # Set up log file
         self.log_path = time.strftime("MENACE_log_%Y_%m_%d_%H%M_%S.json")

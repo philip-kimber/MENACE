@@ -30,6 +30,31 @@ class MenaceConfig:
             }
         return dct
 
+    def printout(self):
+        # Print the current config setting
+        print("""    First box initial beads: {0},{1},{2},
+                            {3},{4},{5},
+                            {6},{7},{8}
+                            
+""".format(*self.INITIAL_BOX_BEADS))
+        print("""   Initial weights for MENACE's moves:
+        Second move boxes: {0}
+        Third move boxes: {1}
+        Fourth move boxes: {2}
+""".format(*self.INITIAL_WEIGHTS))
+        print("""   Colour map: {0},{1},{2},
+                {3},{4},{5},
+                {6},{7},{8},
+                {9} for resign
+""".format(*self.COLOUR_MAP))
+        print("""
+    Incentives:
+        When the game is a draw: {0}
+        When MENACE wins: {1}
+        When MENACE loses: {2}
+""".format(*[i if i < 0 else "+"+str(i) for i in self.INCENTIVES]))
+        print()
+
 def menace_config_from_dct(dct):
     # Produces a populated config object from dictionary from log (no error checking)
     out = MenaceConfig()
@@ -41,6 +66,32 @@ def menace_config_from_dct(dct):
         out.COLOUR_MAP = dct["COLOUR_MAP"]
     if "INCENTIVES" in dct.keys():
         out.INCENTIVES = dct["INCENTIVES"]
+    return out
+
+def menace_config_from_prompt():
+    # Produces a populated config object by prompting the command line
+    # No error checking at this stage
+    out = MenaceConfig()
+    print()
+    print("\tEnter first box initial beads in order of list")
+    initial_box_beads = []
+    for _ in range(9):
+        initial_box_beads.append(int(input("\t\t>")))
+    out.INITIAL_BOX_BEADS = initial_box_beads
+    weights_2nd = int(input("\tEnter initial weights for MENACE second move boxes: "))
+    weights_3rd = int(input("\tEnter initial weights for MENACE third move boxes: "))
+    weights_4th = int(input("\tEnter initial weights for MENACE fourth move boxes: "))
+    out.INITIAL_WEIGHTS = [weights_2nd, weights_3rd, weights_4th]
+    print("\tEnter colour bead initials in order of list (tenth is resign indicator)")
+    colour_map = []
+    for _ in range(10):
+        colour_map.append(input("\t\t>").strip())
+    out.COLOUR_MAP = colour_map
+    inc_draw = int(input("\tEnter incentive for draw: "))
+    inc_win = int(input("\tEnter incentive for MENACE win: "))
+    inc_lose = int(input("\tEnter incentive for MENACE lose: "))
+    out.INCENTIVES = [inc_draw, inc_win, inc_lose]
+    print()
     return out
 
 def menace_config_compare(cfg, comp):

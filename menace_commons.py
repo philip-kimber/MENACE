@@ -12,8 +12,8 @@ class MenaceConfig:
         # Mapping of colours of beads to spaces on board. Each colour must have a single character reference
         # and this is written here in board order, rows-first
         self.COLOUR_MAP = ['r','o','y',
-                           'g','b','i',
-                           'v','w','l',
+                           'g','b','u',
+                           'p','w','l',
                            'D'] # The final colour (COLOUR_MAP[9]) represents where the box is empty and MENACE resigns
 
         # The amount by which we change the beads in each eventuality, written here as a list of

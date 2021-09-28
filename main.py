@@ -2,11 +2,13 @@ import menace_commons as commons
 from generate_boxes import get_boxes
 import simulations
 import menace as menace_py
+import threading
+import graph
 
-
-class MenaceApp:
+class MenaceApp(threading.Thread):
 
     def __init__(self):
+        super(MenaceApp, self).__init__()
         # Welcome message
         print("""
 -----------------------------------------------------------
@@ -19,6 +21,7 @@ class MenaceApp:
 
         # Set up default configs
         cfg = commons.MenaceConfig()
+        self.graph = graph.Graph(self)
         
 
         # Check user is happy with configs
@@ -30,7 +33,9 @@ class MenaceApp:
 
         # Set up MENACE
         self.menace = menace_py.Menace(cfg)
+        self.start()
 
+    def run(self):
         # Enter main loop of commands
         print()
         print("Setup completed. Enter commands or try 'help' to see list")
@@ -130,3 +135,5 @@ Choice: """
 
 if __name__ == "__main__":
     app = MenaceApp()
+    app.graph.show()  # make sure that this happens on the main thread.
+

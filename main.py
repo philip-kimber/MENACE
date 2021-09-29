@@ -58,6 +58,8 @@ class MenaceApp(threading.Thread):
                 self.cmd_results()
             elif cmd == "beads":
                 self.cmd_beads()
+            elif cmd == "box":
+                self.cmd_box()
             else:
                 print("Unrecognised command. Try 'help' for a list of valid ones")
     
@@ -131,6 +133,22 @@ Choice: """
         print("Box began with {0} beads".format(self.menace.initial_first_box_beads))
         print(self.menace.beads_over_time)
         print()
+
+    def cmd_box(self):
+        print()
+        box = int(input("What box would you like to manage? "))
+        print()
+        print("This box should be:")
+        print("\n".join([" ".join(i) for i in self.menace.all_boxes[box].readable_full()]))
+        if int(input("Would you like to edit this box? (1=yes, 0=no): ")) == 1:
+            done_editing = False
+            while not done_editing:
+                colour_to_edit = self.menace.config.COLOUR_MAP.index(input("Enter the colour to edit: "))
+                self.menace.all_boxes[box].beads[colour_to_edit] += int(input("Enter the amount to edit it by: "))
+
+                done_editing = int(input("Are you done editing this box? (1=yes, 0=no) ")) == 1#
+        print()
+
 
 
 if __name__ == "__main__":

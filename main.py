@@ -22,18 +22,32 @@ class MenaceApp(threading.Thread):
         # Set up default configs
         cfg = commons.MenaceConfig()
         self.graph = graph.Graph(self)
-        
+
 
         # Check user is happy with configs
         print("Current configs:")
         cfg.printout()
-        change_cfg = int(input("Do you want to change these configs (1=yes, 0=no): "))
+        change_cfg = self.get_integer_input("Do you want to change these configs  (1=yes, 0=no): ", 0, 1)
         if change_cfg:
             cfg = commons.menace_config_from_prompt()
 
         # Set up MENACE
         self.menace = menace_py.Menace(cfg)
         self.start()
+
+
+    def is_valid_integer(self, test, lower_bound, upper_bound):
+        if not test.replace("-", "").isnumeric() and test.count("-") < 2: # For some reason the removeprefix function wasn't working for me, this can be messed up so be careful with random -'s in the middle of a number
+            return False
+        return lower_bound <= int(test) <= upper_bound
+
+
+    def get_integer_input(self, prompt, lower_bound, upper_bound):
+        usr_input = input(prompt).strip()
+        while not self.is_valid_integer(usr_input, lower_bound, upper_bound):
+            usr_input = input(f"Invalid, please enter a number between {lower_bound} and {upper_bound}: ")
+        return int(usr_input)
+
 
     def run(self):
         # Enter main loop of commands
@@ -62,7 +76,7 @@ class MenaceApp(threading.Thread):
                 self.cmd_box()
             else:
                 print("Unrecognised command. Try 'help' for a list of valid ones")
-    
+
     def cmd_help(self):
         print("List of commands:")
         print("""
@@ -76,14 +90,14 @@ class MenaceApp(threading.Thread):
 """)
 
     def cmd_exit(self):
-        sure = int(input("Are you sure you want to leave (1=yes, 0=no): "))
+        sure = self.get_integer_input("Are you sure you want to leave (1=yes, 0=no): ", 0, 1)
         if sure:
             exit()
 
     def cmd_config(self):
         print("Current configs:")
         self.menace.config.printout()
-        change_cfg = int(input("Do you want to change these configs (1=yes, 0=no): "))
+        change_cfg = self.get_integer_input("Do you want to change these configs  (1=yes, 0=no): ", 0, 1)
         if change_cfg:
             print("Note that changes in config relating to initial beads etc. will not come into effect, as boxes already generated") # Nor, indeed, will the log be updated
             new_cfg = commons.menace_config_from_prompt()
@@ -96,10 +110,10 @@ class MenaceApp(threading.Thread):
 
     def cmd_log(self):
         logf = input("Path of log file: ").strip()
-        cfg_update = int(input("Update config to match log file if different (1=yes, 0=no): "))
-        prnt = int(input("Print the gameplay as it happens (1=yes, 0=no): "))
-        results = int(input("Show results afterwards (1=yes, 0=no): "))
-        bead_displ = int(input("Show the aggregate bead changes afterwards (1=yes, 0=no): "))
+        cfg_update = self.get_integer_input("Update config to match log file if different  (1=yes, 0=no): ", 0, 1)
+        prnt = self.get_integer_input("Print the gameplay as it happens  (1=yes, 0=no): ", 0, 1)
+        results = self.get_integer_input("Show results afterwards  (1=yes, 0=no): ", 0, 1)
+        bead_displ = self.get_integer_input("Show the aggregate bead changes afterwards  (1=yes, 0=no): ", 0, 1)
         print()
         self.menace.play_games_log(logf, cfg_update, prnt, results, bead_displ)
         print()
@@ -113,10 +127,10 @@ class MenaceApp(threading.Thread):
 Choice: """
 ))
         opponent = [simulations.opponent_random, simulations.opponent_basic, simulations.opponent_intermediate, simulations.opponent_perfect][raw_opponent]
-        no_of_games = int(input("Number of games to simulate: "))
-        prnt = int(input("Print the gameplay as it happens (1=yes, 0=no): "))
-        results = int(input("Show results afterwards (1=yes, 0=no): "))
-        bead_displ = int(input("Show the aggregate bead changes afterwards (1=yes, 0=no): "))
+        no_of_games = self.get_integer_input("Number of games to simulate: ", 0, 1000)
+        prnt = self.get_integer_input("Print the gameplay as it happens  (1=yes, 0=no): ", 0, 1)
+        results = self.get_integer_input("Show results afterwards  (1=yes, 0=no): ", 0, 1)
+        bead_displ = self.get_integer_input("Show the aggregate bead changes afterwards  (1=yes, 0=no): ", 0, 1)
         print()
         self.menace.simulate_games(opponent, no_of_games, prnt, results, bead_displ)
         print()
@@ -136,17 +150,28 @@ Choice: """
 
     def cmd_box(self):
         print()
-        box = int(input("What box would you like to manage? "))
+        box = self.get_integer_input("What box would you like to manage? ", 0, len(self.menace.all_boxes) - 1)
         print()
         print("This box should be:")
         print("\n".join([" ".join(i) for i in self.menace.all_boxes[box].readable_full()]))
-        if int(input("Would you like to edit this box? (1=yes, 0=no): ")) == 1:
+        edited = False
+        if self.get_integer_input("Would you like to edit this box?  (1=yes, 0=no): ", 0, 1) == 1:
             done_editing = False
             while not done_editing:
-                colour_to_edit = self.menace.config.COLOUR_MAP.index(input("Enter the colour to edit: "))
-                self.menace.all_boxes[box].beads[colour_to_edit] += int(input("Enter the amount to edit it by: "))
+                usr_input = input("Enter the colour to edit: ").strip()
+                while usr_input not in self.menace.config.COLOUR_MAP:
+                    usr_input = input("Invalid colour try again: ")
 
-                done_editing = int(input("Are you done editing this box? (1=yes, 0=no) ")) == 1#
+                colour_to_edit = self.menace.config.COLOUR_MAP.index(usr_input)
+                self.menace.all_boxes[box].beads[colour_to_edit] += self.get_integer_input("Enter the amount to edit it by: ", -1000, 1000)
+                edited = True
+
+                done_editing = self.get_integer_input("Are you done editing this box?  (1=yes, 0=no): ", 0, 1) == 1
+
+        if edited:
+            print("The box now looks like:")
+            print("\n".join([" ".join(i) for i in self.menace.all_boxes[box].readable_full()]))
+
         print()
 
 

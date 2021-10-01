@@ -2,6 +2,17 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 
 
+def smooth(values, weight):
+    last = values[0]
+    smoothed = list()
+    for point in values:
+        smoothed_val = last * weight + (1 - weight) * point
+        smoothed.append(smoothed_val)
+        last = smoothed_val
+
+    return smoothed
+
+
 class Graph:
     def __init__(self, main):
         self.main = main
@@ -22,7 +33,6 @@ class Graph:
         self.ax3 = plt.axes()
         self.ax3.set_xlabel("games")
         self.ax3.set_ylabel("weighted average")
-
 
     def show(self):
         self.anim = animation.FuncAnimation(self.fig, self.animate, interval=1000)
@@ -47,8 +57,8 @@ class Graph:
 
         plt.figure(3)
         self.ax3.clear()
-        for i in self.main.menace.weighted_win_loss:
-            self.ax3.plot(i)
-        self.ax3.set_xlabel("games")
-        self.ax3.set_ylabel("weighted average")
-
+        if len(self.main.menace.win_loss_over_time) > 5:
+            for i in self.main.menace.weighted_win_loss:
+                self.ax3.plot(smooth(i, 0.7))
+            self.ax3.set_xlabel("games")
+            self.ax3.set_ylabel("weighted average")

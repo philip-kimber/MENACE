@@ -4,6 +4,7 @@ import simulations
 
 import time
 import json
+import sys
 
 
 class Menace:
@@ -27,6 +28,8 @@ class Menace:
         self.losses_over_time = []
         self.win_loss_over_time = []
         self.weighted_win_loss = [[], [], []]
+
+        sys.setrecursionlimit(10000)
 
         self.initial_first_box_beads = sum(self.all_boxes[0].beads) # To allow for calculation of change of beads
 

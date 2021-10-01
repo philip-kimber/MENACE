@@ -22,6 +22,12 @@ class Menace:
         # Lists to keep track of progress as games progress
         self.state_over_time = [] # One item per game, the result 0=draw, 1=MENACE wins, 2=player wins
         self.beads_over_time = [] # One item per game, the number of beads in the first box at end of game
+        self.wins_over_time = []
+        self.draws_over_time = []
+        self.losses_over_time = []
+        self.win_loss_over_time = []
+        self.weighted_win_loss = [[], [], []]
+
         self.initial_first_box_beads = sum(self.all_boxes[0].beads) # To allow for calculation of change of beads
 
         # Set up log file
@@ -178,6 +184,25 @@ class Menace:
         self.state_over_time.append(state)
         self.beads_over_time.append(sum(self.all_boxes[0].beads))
         self.log_game(log_cache)
+
+        self.wins_over_time.append(self.games_played[1])
+        self.draws_over_time.append(self.games_played[0])
+        self.losses_over_time.append(self.games_played[2])
+
+        self.win_loss_over_time.append(state)
+
+        if len(self.win_loss_over_time) > 3:
+            for i in range(3):
+                arr = [1 if i == j else 0 for j in self.win_loss_over_time]
+                self.weighted_win_loss[i].append(self.calculate_moving_average(len(arr) - 1, arr))
+
+    def calculate_moving_average(self, n, lst):
+        k = 3 / (n + 1)
+        score = lst[n]
+        if n == 1:
+            return score
+        res = (score * k) + (self.calculate_moving_average(n - 1, lst) * (1 - k))
+        return res
 
     def play_game_usr(self):
         # Play a game with prompts to the command line, for user to enter moves

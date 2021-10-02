@@ -195,7 +195,7 @@ class Menace:
         self.win_loss_over_time.append(state)
 
         if len(self.win_loss_over_time) > 3:
-            for i in range(3):
+            for i in range(3): # What order is self.weighted_win_loss populated in? wins,draws,losses?
                 arr = [1 if i == j else 0 for j in self.win_loss_over_time]
                 self.weighted_win_loss[i].append(self.calculate_moving_average(len(arr) - 1, arr))
 

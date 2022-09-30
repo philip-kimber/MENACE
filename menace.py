@@ -146,9 +146,12 @@ class Menace:
             fetch(0, "Game: Player wins", board, -1, fetch_args)
         else: # state = 0, draw
             fetch(0, "Game: Draw", board, -1, fetch_args)
+
+        shouldApply = fetch(1, "Should update (Y/n): ",  board, -1, fetch_args)
+        if shouldApply == "n":
+            return
         
         self.games_played[state] += 1 # Update draw/win/loss counter
-
         # Apply the incentives and tell user which beads to add/take away
         described_moves = [] # A list to be passed to result_cb, of tuples as (box id, bead colour, count before, count after)
         for move in moves:
@@ -211,7 +214,7 @@ class Menace:
         # Play a game with prompts to the command line, for user to enter moves
         def fetch(is_fetch, text, board, box_id, args):
             if is_fetch:
-                return input(text)
+                return input(text).lower().strip()
             else:
                 print(text)
         self.play_game(fetch)
@@ -236,6 +239,8 @@ class Menace:
         moves_made = []
         def fetch(is_fetch, text, board, box_id, args):
             if is_fetch:
+                if text == "Should update (Y/n): ":
+                    return "y"
                 out = args["encoded"][args["ptr"][0]][args["ptr"][1]]
                 args["ptr"][1] += 1
                 if args["prnt"] == 1:
@@ -273,6 +278,9 @@ class Menace:
         moves_made = []
         def fetch(is_fetch, text, board, box_id, args):
             if is_fetch:
+                if text == "Should update (Y/n): ":
+                    return "y"
+
                 if box_id == -1: # Opponent's move
                     return args["opponent"](board, args["config"])
                 else: # MENACE's move
